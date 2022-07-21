@@ -15,7 +15,7 @@ import numpy as np
 import glob
 import pydub
 import os
-#from .preprocessor2 import preprocess
+from .preprocessor2 import preprocess
 
 subaudio = 0.1
 batch = 20
@@ -38,9 +38,6 @@ for path2 in glob.glob(r'..\maestro\2004\*.midi'):
     raw_midi.append(path2)
     raw_wav.append(path2[:-4] + 'wav')
 
-print(raw_midi)
-print(raw_wav)
-
 # Prepare input and output arrays
 temp1 = []
 temp2 = []
@@ -57,9 +54,6 @@ test_midi = np.array(temp2[int(len(temp2) * 0.75):])
 train_wav.reshape(train_wav.shape[0], 1, int(22050 * subaudio))
 test_wav.reshape(test_wav.shape[0], 1, int(22050 * subaudio))
 
-print(train_wav)
-print(test_wav)
-
 # Set up and train neural network
 model = tf.keras.Sequential([
     tf.keras.layers.LSTM(256, activation = 'relu', return_sequences = True),
@@ -73,19 +67,17 @@ model = tf.keras.Sequential([
     tf.keras.layers.Reshape(int(subaudio * 100), 128)
     ])
 
-#model.compile(
- #   optimizer = 'adam',
-  #  loss = tf.keras.losses.CategoricalCrossentropy(from_logits = True),
-   # metrics = ['accuracy']
- #   )
-#EPOCHS = 100
+model.compile(
+    optimizer = 'adam',
+    loss = tf.keras.losses.CategoricalCrossentropy(from_logits = True),
+    metrics = ['accuracy']
+    )
+EPOCHS = 100
 
-#trainer = model.fit(train_wav, train_midi, steps_per_epoch = 0, epochs = EPOCHS)
+trainer = model.fit(train_wav, train_midi, steps_per_epoch = 0, epochs = EPOCHS)
 
 # Test neural network
-#model.evaluate(test_wav, test_midi)
+model.evaluate(test_wav, test_midi)
 
 # Save trained model
-#model.save('music_model.h5')
-
-# Source: https://www.kaggle.com/code/timno1/midi-transcriptions-with-lstm
+model.save('music_model.h5')
