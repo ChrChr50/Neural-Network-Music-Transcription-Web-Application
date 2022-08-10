@@ -1,23 +1,17 @@
 import tensorflow as tf
 from tensorflow import keras
-from keras.callbacks import Callback
-from keras import metrics, losses
+from keras.callbacks import Callback, History
 from keras.models import Model, load_model
 from keras.layers import Dense, Dropout, Flatten, Reshape, Input
-from keras.layers import LSTM, Conv2D, MaxPooling2D, add
-from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard, CSVLogger
+from keras.layers import LSTM
 from keras.layers import BatchNormalization
-from keras.layers import Activation
-from keras.optimizers import SGD
-from keras import backend as K
-import matplotlib.pyplot as plt
 import numpy as np
 import glob
 import pydub
 import os
 from .preprocessor2 import preprocess
 
-subaudio = 0.1
+max_length = 1000
 
 raw_wav = []
 raw_midi = []
@@ -39,35 +33,31 @@ for path2 in glob.glob(r'C:\Users\chris\OneDrive\Documents\Cornell\Practice\AMT\
     raw_wav.append(path2[:-4] + 'wav')
 
 # Prepare input and output arrays
-batch = len(raw_wav) / 5
+#batch = int(len(raw_wav) / 5)
+batch = 5
 temp1 = []
 temp2 = []
 for wavpath, midipath in zip(raw_wav[:batch], raw_midi[:batch]):
-    input, output = preprocess(wavpath, midipath, subaudio)
-    temp1.append(input)
-    temp2.append(output)
+    input, output = preprocess(wavpath, midipath)
+    temp1.append(np.array(input))
+    temp2.append(np.array(output))
 
-print(temp2)
-
-train_wav = np.array(temp1[:int(len(temp1) * 0.75)], dtype = object)
-test_wav = np.array(temp1[int(len(temp1) * 0.75):], dtype = object)
-train_midi = np.array(temp2[:int(len(temp2) * 0.75)], dtype = object)
-test_midi = np.array(temp2[int(len(temp2) * 0.75):], dtype = object)
-
-train_wav.reshape(train_wav.shape[0], 1, int(22050 * subaudio))
-test_wav.reshape(test_wav.shape[0], 1, int(22050 * subaudio))
+train_wav = temp1[:int(len(temp1) * 0.75)]
+test_wav = temp1[int(len(temp1) * 0.75):]
+train_midi = temp2[:int(len(temp2) * 0.75)]
+test_midi = temp2[int(len(temp2) * 0.75):]
 
 # Set up and train neural network
 model = tf.keras.Sequential([
-    tf.keras.layers.LSTM(256, activation = 'relu', return_sequences = True),
+    tf.keras.layers.LSTM(256, activation = 'relu', return_sequences = True, input_shape = (5, 84)),
     tf.keras.layers.BatchNormalization(),
-    tf.keras.layers.LSTM(512, activation = 'relu', return_sequences = True),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation = 'relu'),
+    tf.keras.layers.LSTM(512, activation = 'relu', return_sequences = True, input_shape = (5, 84)),
     tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.LSTM(512, activation = 'relu'),
     tf.keras.layers.Dense(256, activation = 'relu'),
-    tf.keras.layers.Dense(12800 * subaudio),
-    tf.keras.layers.Reshape(int(subaudio * 100), 128)
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense((128 * max_length), activation = 'relu'),
+    tf.keras.layers.Reshape((max_length, 128))
     ])
 
 model.compile(
@@ -78,6 +68,8 @@ model.compile(
 EPOCHS = 100
 
 trainer = model.fit(train_wav, train_midi, steps_per_epoch = 0, epochs = EPOCHS)
+model.summary()
+print(trainer.history['accuracy'])
 
 # Test neural network
 model.evaluate(test_wav, test_midi)
