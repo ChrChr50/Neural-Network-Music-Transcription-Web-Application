@@ -2,11 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import librosa
 import librosa.display
-import note_seq
 import pretty_midi
-import math
 
-def preprocess(wav, midi, subaudio):
+def preprocess(wav, midi):
 
     # Generate spectrogram of wavfile
     amplitudes, sample_rate = librosa.load(wav)
@@ -36,25 +34,18 @@ def preprocess(wav, midi, subaudio):
     input = np.concatenate((input, segment), axis = 0)
 
     # Perform one hot encoding on MIDI
-    seq = note_seq.midi_file_to_sequence_proto(midi)
-    start = 0
-    end = seq.notes[len(seq.notes) - 1].end_time
-    time = np.arange(start, end, 0.01)
-    onehot = np.zeros((len(time), 128))
+    unpacked_midi = pretty_midi.PrettyMIDI(midi)
+    end_time = int(unpacked_midi.get_end_time())
+    time_arr = np.linspace(0, end_time, input.shape[0])
+    piano = unpacked_midi.get_piano_roll(fs = 84, times = time_arr).astype('float32')
 
-    for note2 in seq.notes:
-        pit = note2.pitch
-        for j in range(int(note2.start_time * 100), int(note2.end_time * 100)):
-            onehot[j, pit] = note2.velocity
-
-    batches = math.ceil(len(amplitudes) / (sample_rate * subaudio))
-
-    for z in range(int(batches * subaudio * 100) - len(onehot)):
-        onehot = np.append(onehot, [np.zeros((128))], axis = 0)
-
-    output = onehot.reshape(batches, int(subaudio * 100), 128)
-
-    return input, output
+    onehot = np.zeros((len(time_arr), 128))
+    for note in unpacked_midi.instruments[0].notes:
+        for time in range(int(note.start * (1 / (time_arr[1] - time_arr[0]))), int(note.end * (1 / (time_arr[1] - time_arr[0])))):
+            onehot[time - 1, note.pitch] = 1
+    
+    print('Preprocessing complete!')
+    return input, onehot
 
 def preprocess2(wav):
 
