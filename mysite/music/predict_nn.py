@@ -35,3 +35,7 @@ def wav_nn_predict(input):
     new_midi.instruments.append(piano)
 
     return new_midi
+
+# DELETE LATER
+def wav_nn_predict2(input):
+    print(input)
