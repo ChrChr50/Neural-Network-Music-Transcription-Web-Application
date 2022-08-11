@@ -4,6 +4,7 @@ import librosa
 import librosa.display
 import pretty_midi
 
+# For initial training
 def preprocess(wav, midi):
 
     # Generate spectrogram of wavfile
@@ -35,18 +36,19 @@ def preprocess(wav, midi):
 
     # Perform one hot encoding on MIDI
     unpacked_midi = pretty_midi.PrettyMIDI(midi)
-    end_time = int(unpacked_midi.get_end_time())
+    end_time = unpacked_midi.get_end_time()
     time_arr = np.linspace(0, end_time, input.shape[0])
     piano = unpacked_midi.get_piano_roll(fs = 84, times = time_arr).astype('float32')
 
     onehot = np.zeros((len(time_arr), 128))
     for note in unpacked_midi.instruments[0].notes:
         for time in range(int(note.start * (1 / (time_arr[1] - time_arr[0]))), int(note.end * (1 / (time_arr[1] - time_arr[0])))):
-            onehot[time - 1, note.pitch] = 1
+            onehot[time, note.pitch] = 1
     
     print('Preprocessing complete!')
     return input, onehot
 
+# For production environment usage
 def preprocess2(wav):
 
     # Generate spectrogram of wavfile
