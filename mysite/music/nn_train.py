@@ -60,6 +60,7 @@ model = tf.keras.Sequential([
     tf.keras.layers.Reshape((max_length, 128))
     ])
 
+model.summary()
 model.compile(
     optimizer = 'adam',
     loss = tf.keras.losses.CategoricalCrossentropy(from_logits = True),
@@ -68,7 +69,6 @@ model.compile(
 EPOCHS = 100
 
 trainer = model.fit(train_wav, train_midi, steps_per_epoch = 0, epochs = EPOCHS)
-model.summary()
 print(trainer.history['accuracy'])
 
 # Test neural network
