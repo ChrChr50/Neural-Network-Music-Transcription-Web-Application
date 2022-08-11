@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Music File Analyzer</title>
+        <title>Music to MIDI: Transcription App</title>
     </head>
 
     <body>
@@ -21,17 +17,19 @@
         <!-- Upload form. Note enctype attribute! -->
         <form action="{% url "FileHandler" %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            {{ message }}
+            <center>{{ message }}</center>
             <p>{{ form.non_field_errors }}</p>
 
-            <p>{{ form.docfile.label_tag }} {{ form.docfile.help_text }}</p>
+            <p><center>{{ form.docfile.label_tag }} {{ form.docfile.help_text }}</center></p>
 
             <p>
                 {{ form.docfile.errors }}
-                {{ form.docfile }}
+                <center>{{ form.docfile }}</center>
             </p>
 
-            <p><input type="submit" value="Upload"/></p>
+            <p><center><input type="submit" value="Upload"/></center></p>
         </form>
+
     </body>
+
 </html>
